@@ -3,32 +3,23 @@ import requests
 import pandas as pd
 import time
 import os
+import warnings
+warnings.filterwarnings('ignore')
 
 key_word = '商業分析'
 
 #get job data and store in csv
-def get_job_data(key_word:str)-> None:
+def get_job_data(key_word:str)-> pd.DataFrame:
     #let user to get into the 104 web
     data_len_check = 1
     start_page = 1
     total_page = 100
 
-    #check weather "job data csv" exits
-    if os.path.exists('job_data.csv'):
-        data = pd.read_csv('job_data.csv')
-        print('job data csv exist')
-    else:
-       data  = pd.DataFrame(columns=['job_name','company_name','job_link','job_demand','toolkit'])
+    #create dataframe
+    data  = pd.DataFrame(columns=['job_name','company_name','job_industry','job_link','job_description','toolkit','good_to_have'])
 
-    #find num of total pages
-    def get_url_soup(key_word: str, page_number:int = 1)-> BeautifulSoup:
-        url = f'https://www.104.com.tw/jobs/search/?jobsource=index_s&keyword={key_word}&mode=s&page={page_number}'
-        page = requests.get(url)
-        soup = BeautifulSoup(page.text, 'html.parser')   
-         
-        return soup
-
-    for page in range(start_page,total_page):
+    #get job data
+    for page in range(start_page,2):
         page_number = page
         url = f'https://www.104.com.tw/jobs/search/?jobsource=index_s&keyword={key_word}&mode=s&page={page_number}'
         page = requests.get(url)
@@ -53,12 +44,11 @@ def get_job_data(key_word:str)-> None:
                 print('job: ',company_name,job_name)
                 print('job link: ',job_link)
                 #insert data into dataframe
-                data.loc[len(data)] = [job_name, company_name, job_link, None, None]
+                data.loc[len(data)] = [job_name, company_name, job_industry,job_link, None, None, None]
 
         #print error log
         except Exception as e:
             print(e)
-            print(f'page {page_number} error')
             pass
         
         time.sleep(1)
@@ -69,10 +59,36 @@ def get_job_data(key_word:str)-> None:
         else:
             data_len_check = current_data_len
         print('changing to next page')
-    
-    #save data to csv    
-    data.to_csv(f'104_{key_word}_job_data.csv',index=False)
+        
+    return data
 
+def get_job_details(data:pd.DataFrame)-> pd.DataFrame:
+    for i in range(0,len(data)): 
 
+        url = data['job_link'][i]
+        page = requests.get(url)
+        soup = BeautifulSoup(page.text, 'html.parser')
+        job_content = soup.find(name = 'p', class_="mb-5 r3 job-description__content text-break").text
+        toolkit_elements = soup.find_all(name= 'u', attrs = {'data-v-7850ec4d': True})        
+        toolkit = str([i.text for i in toolkit_elements]).strip('[]')     
+        good_to_have = soup.find_all('p', class_ ='m-0 r3 w-100')
+
+        try:
+            print(job_content)
+            print('-'*20)
+            print(toolkit)
+            print('-'*20)
+            print(good_to_have[0].text)
+            
+            data['job_description'][i] = job_content
+            data['toolkit'][i] = toolkit
+            data['good_to_have'][i] = good_to_have[0].text
+        except Exception as e:
+            print(e)
+            pass
+        
+    return data
     
-get_job_data(key_word)
+data = get_job_data(key_word)
+data = get_job_details(data)
+data.to_csv('aaa.csv')

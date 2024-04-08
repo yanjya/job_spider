@@ -10,6 +10,7 @@ python = "^3.12"
 beautifulsoup4 = "^4.12.3"
 pandas = "^2.2.1"
 requests = "^2.31.0"
+ipykernel = "^6.29.4"
 
 
 [build-system]
