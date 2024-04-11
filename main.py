@@ -19,7 +19,7 @@ def get_job_data(key_word:str)-> pd.DataFrame:
     data  = pd.DataFrame(columns=['job_name','company_name','job_industry','job_link','job_description','toolkit','good_to_have'])
 
     #get job data
-    for page in range(start_page,2):
+    for page in range(start_page,total_page):
         page_number = page
         url = f'https://www.104.com.tw/jobs/search/?jobsource=index_s&keyword={key_word}&mode=s&page={page_number}'
         page = requests.get(url)
