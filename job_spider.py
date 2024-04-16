@@ -17,7 +17,7 @@ class JobSpider:
         - key_word (str): The keyword used for job search.
         """
         self.key_word = key_word
-        self.data = pd.DataFrame(columns=['job_name','company_name','job_industry','job_link','job_description','toolkit','good_to_have'])
+        self.data = pd.DataFrame(columns=['job_name','company_name','job_industry','job_link','job_description','toolkit','good_to_have','salary'])
 
     def get_job_data(self)-> pd.DataFrame:
         """
@@ -57,7 +57,7 @@ class JobSpider:
                     print('job: ',company_name,job_name)
                     print('job link: ',job_link)
                     #insert data into dataframe
-                    self.data.loc[len(self.data)] = [job_name, company_name, job_industry,job_link, None, None, None]
+                    self.data.loc[len(self.data)] = [job_name, company_name, job_industry,job_link, None, None, None, None]
 
             # Handle exceptions and log errors
             except Exception as e:
@@ -90,6 +90,8 @@ class JobSpider:
             toolkit_elements = soup.find_all(name= 'u', attrs = {'data-v-7850ec4d': True})        
             toolkit = str([i.text for i in toolkit_elements]).strip('[]')     
             good_to_have = soup.find_all('p', class_ ='m-0 r3 w-100')
+            salary_elements = soup.find_all('div', class_='row')
+
 
             try:
                 print(job_content)
@@ -97,15 +99,19 @@ class JobSpider:
                 print(toolkit)
                 print('-'*20)
                 print(good_to_have[0].text)
+                print('-'*20)
+                print(salary_elements[4].text)
                 
                 self.data.loc[i, 'job_description'] = job_content
                 self.data.loc[i, 'toolkit'] = toolkit
                 self.data.loc[i, 'good_to_have'] = good_to_have[0].text
+                self.data.loc[i, 'salary'] = salary_elements[4].text
             except Exception as e:
                 logging.error(f"An error occurred: {e}")
                 continue
             
         return self.data
+
 
     def save_to_csv(self, filename)-> None:
         """
