@@ -6,6 +6,7 @@ import os
 import warnings
 import logging
 warnings.filterwarnings('ignore')
+import traceback
 
 
 class JobSpider:
@@ -29,7 +30,7 @@ class JobSpider:
         #let user to get into the 104 web
         data_len_check = 1
         start_page = 1
-        total_page = 100
+        total_page = 25
 
         #get job data
         for page in range(start_page,total_page):
@@ -51,6 +52,10 @@ class JobSpider:
 
                     #get job link
                     job_link = [link for link in job_link_elements if link.text == job_name]
+                    #####
+
+
+                    #####
                     job_link = 'https:' +job_link[0]['href']
                     
                     print('index: ',len(self.data))
@@ -62,9 +67,14 @@ class JobSpider:
             # Handle exceptions and log errors
             except Exception as e:
                 logging.error(f"An error occurred: {e}")
+                traceback.print_exc()
+                print('index: ',len(self.data))
+                print('job: ',company_name,job_name)
+                print('job link: ',job_link)
+
                 continue  # Use continue instead of pass to skip to the next iteration
             
-            time.sleep(1)
+            # time.sleep(1)
             current_data_len = len(self.data)
             if current_data_len == data_len_check:
                 logging.info('No new data')
@@ -82,18 +92,18 @@ class JobSpider:
         - data (DataFrame): The job data with job details added.
         """
         for i in range(0,len(self.data)): 
-
-            url = self.data['job_link'][i]
-            page = requests.get(url)
-            soup = BeautifulSoup(page.text, 'html.parser')
-            job_content = soup.find(name = 'p', class_="mb-5 r3 job-description__content text-break").text
-            toolkit_elements = soup.find_all(name= 'u', attrs = {'data-v-7850ec4d': True})        
-            toolkit = str([i.text for i in toolkit_elements]).strip('[]')     
-            good_to_have = soup.find_all('p', class_ ='m-0 r3 w-100')
-            salary_elements = soup.find_all('div', class_='row')
-
-
             try:
+                url = self.data['job_link'][i]
+                page = requests.get(url)
+                soup = BeautifulSoup(page.text, 'html.parser')
+                job_content = soup.find(name = 'p', class_="mb-5 r3 job-description__content text-break").text
+                toolkit_elements = soup.find_all(name= 'u', attrs = {'data-v-7850ec4d': True})        
+                toolkit = str([i.text for i in toolkit_elements]).strip('[]')     
+                good_to_have = soup.find_all('p', class_ ='m-0 r3 w-100')
+                salary_elements = soup.find_all('div', class_='row')
+
+
+            
                 print(job_content)
                 print('-'*20)
                 print(toolkit)
@@ -108,8 +118,9 @@ class JobSpider:
                 self.data.loc[i, 'salary'] = salary_elements[4].text
             except Exception as e:
                 logging.error(f"An error occurred: {e}")
+                traceback.print_exc()
                 continue
-            
+            # time.sleep(0.5)
         return self.data
 
 
