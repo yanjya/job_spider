@@ -1,134 +1,102 @@
-from bs4 import BeautifulSoup
 import requests
 import pandas as pd
-import time
-import os
 import warnings
-import logging
 warnings.filterwarnings('ignore')
 import traceback
 
-
 class JobSpider:
-    def __init__(self, key_word):
-        """
-        Initialize the JobSpider class.
+    def __init__(self):
+        self.headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36',
+                'Referer': 'https://www.104.com.tw/'}
+        self.area_code_url = 'https://static.104.com.tw/category-tool/json/Area.json'
+        self.industry_code_url = 'https://static.104.com.tw/category-tool/json/Indust.json'
 
-        Parameters:
-        - key_word (str): The keyword used for job search.
-        """
-        self.key_word = key_word
-        self.data = pd.DataFrame(columns=['job_name','company_name','job_industry','job_link','job_description','toolkit','good_to_have','salary'])
+    #get all job data from 104 website
+    def get_all_job_data(self)-> None:
 
-    def get_job_data(self)-> pd.DataFrame:
+        print('Start to get job data')
+        area_code = self.get_area_code()
+        industry = self.get_industry_code()
+        job_info = self.get_job_info(area_code, industry)
+        job_info.to_csv('job_info.csv', index=False)
+        print('job_info.csv has been saved')
+    
+
+    #get area code
+    def get_area_code(self) -> pd.DataFrame:
         """
-        Get job data from the 104 website.
+        Retrieves the area code information from the specified URL and returns it as a DataFrame.
 
         Returns:
-        - data (DataFrame): The job data in a pandas DataFrame.
+            pd.DataFrame: A DataFrame containing the area code information.
         """
-        #let user to get into the 104 web
-        data_len_check = 1
-        start_page = 1
-        total_page = 25
+        area_code = pd.DataFrame(requests.get(self.area_code_url).json()[0]['n'])
+        area_code = area_code.explode('n')
+        area_code['des2'] = area_code['n'].apply(lambda x: x['des'])
+        area_code['no2'] = area_code['n'].apply(lambda x: x['no'])
+        area_code = area_code[['des', 'no', 'des2', 'no2']]
+        # area_code.to_csv('area_code.csv', index=False)
 
-        #get job data
-        for page in range(start_page,total_page):
-            page_number = page
-            url = f'https://www.104.com.tw/jobs/search/?jobsource=index_s&keyword={self.key_word}&mode=s&page={page_number}'
-            page = requests.get(url)
-            soup = BeautifulSoup(page.text, 'html.parser')
-            
-            # Find all the elements
-            elements = soup.find_all(name = 'article', class_="b-block--top-bord job-list-item b-clearfix js-job-item")
-            job_link_elements = soup.find_all(name='a', class_='js-job-link')
-            try:
-                for element in elements:
-                    
-                    #get job name / company name
-                    job_name = element['data-job-name']
-                    company_name = element['data-cust-name']
-                    job_industry = element['data-indcat-desc']
+        return area_code
 
-                    #get job link
-                    job_link = [link for link in job_link_elements if link.text == job_name]
-                    #####
-
-
-                    #####
-                    job_link = 'https:' +job_link[0]['href']
-                    
-                    print('index: ',len(self.data))
-                    print('job: ',company_name,job_name)
-                    print('job link: ',job_link)
-                    #insert data into dataframe
-                    self.data.loc[len(self.data)] = [job_name, company_name, job_industry,job_link, None, None, None, None]
-
-            # Handle exceptions and log errors
-            except Exception as e:
-                logging.error(f"An error occurred: {e}")
-                traceback.print_exc()
-                print('index: ',len(self.data))
-                print('job: ',company_name,job_name)
-                print('job link: ',job_link)
-
-                continue  # Use continue instead of pass to skip to the next iteration
-            
-            # time.sleep(1)
-            current_data_len = len(self.data)
-            if current_data_len == data_len_check:
-                logging.info('No new data')
-                break
-            else:
-                data_len_check = current_data_len
-            logging.info('Changing to next page')
-        return self.data
-
-    def get_job_details(self)-> pd.DataFrame:
+    
+    # get industry code
+    def get_industry_code(self) -> pd.DataFrame:
         """
-        Get job details for each job in the data.
+        Retrieves the industry code data from the specified URL and returns it as a pandas DataFrame.
 
         Returns:
-        - data (DataFrame): The job data with job details added.
+            pd.DataFrame: The industry code data as a pandas DataFrame.
         """
-        for i in range(0,len(self.data)): 
-            try:
-                url = self.data['job_link'][i]
-                page = requests.get(url)
-                soup = BeautifulSoup(page.text, 'html.parser')
-                job_content = soup.find(name = 'p', class_="mb-5 r3 job-description__content text-break").text
-                toolkit_elements = soup.find_all(name= 'u', attrs = {'data-v-7850ec4d': True})        
-                toolkit = str([i.text for i in toolkit_elements]).strip('[]')     
-                good_to_have = soup.find_all('p', class_ ='m-0 r3 w-100')
-                salary_elements = soup.find_all('div', class_='row')
+        industry = pd.DataFrame(requests.get(self.industry_code_url).json())
+        industry = industry.explode('n')
+        industry['des2'] = industry['n'].apply(lambda x: x['des'])
+        industry['no2'] = industry['n'].apply(lambda x: x['no'])
+        industry['n2'] = industry['n'].apply(lambda x: x['n'])
+        industry = industry.explode('n2')
+        industry['des3'] = industry['n2'].apply(lambda x: x['des'])
+        industry['no3'] = industry['n2'].apply(lambda x: x['no'])
+        industry = industry[['des', 'no', 'des2', 'no2', 'des3', 'no3']]
+        # industry.to_csv('industry.csv', index=False)
+        return industry
 
-
-            
-                print(job_content)
-                print('-'*20)
-                print(toolkit)
-                print('-'*20)
-                print(good_to_have[0].text)
-                print('-'*20)
-                print(salary_elements[4].text)
-                
-                self.data.loc[i, 'job_description'] = job_content
-                self.data.loc[i, 'toolkit'] = toolkit
-                self.data.loc[i, 'good_to_have'] = good_to_have[0].text
-                self.data.loc[i, 'salary'] = salary_elements[4].text
-            except Exception as e:
-                logging.error(f"An error occurred: {e}")
-                traceback.print_exc()
-                continue
-            # time.sleep(0.5)
-        return self.data
-
-
-    def save_to_csv(self, filename)-> None:
+    #get job information
+    def get_job_info(self, area_code, industry) -> pd.DataFrame:
         """
-        Save the job data to a CSV file.
+        Retrieves job information from the 104 job search website based on the provided area code and industry.
 
-        Parameters:
-        - filename (str): The name of the CSV file to save the data to.
+        Args:
+            area_code (pd.DataFrame): DataFrame containing area codes.
+            industry (pd.DataFrame): DataFrame containing industry codes.
+
+        Returns:
+            pd.DataFrame: DataFrame containing the job information.
+
+        Raises:
+            KeyboardInterrupt: If the process is interrupted by the user.
+            Exception: If an error occurs during the retrieval process.
         """
-        self.data.to_csv(filename)
+        df = []
+        for area in area_code['no2'].unique():
+            for indcat in industry['no2'].unique():
+                page = 1
+                while page <= 100:
+                    try:
+                        url = f'https://www.104.com.tw/jobs/search/list?ro=1&indcat={indcat}&area={area}&order=11&asc=0&page={page}&mode=l'
+                        response = requests.get(url, headers=self.headers)
+                        ndf = pd.DataFrame(response.json()['data']['list'])
+                        print(ndf)
+                        df.append(ndf)
+                        if ndf.shape[0] < 30:
+                            break
+                        page = page + 1
+                    except KeyboardInterrupt:
+                        print('Interrupted by "cntrl+c" ')
+                        break
+                    except Exception as e:
+                        print('Exception occurred: ', e)
+                        traceback.print_exc()
+                        print('==================== Error and retry ====================')
+
+        df = pd.concat(df, ignore_index=True)
+        return df

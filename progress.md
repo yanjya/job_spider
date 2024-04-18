@@ -9,7 +9,7 @@
 
 
 ## 問題
-先加入整個提問得chain
+先加入整個提問得chain, 可以透過resume embedding 還有user input 搜尋有用的東西
 先接streamlit 前端
 
 ## 解決

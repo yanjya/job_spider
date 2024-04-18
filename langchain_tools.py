@@ -10,6 +10,7 @@ from langchain.chains import create_history_aware_retriever, create_retrieval_ch
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from pypdf import PdfReader
 from langchain.agents.agent_types import AgentType
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 import pandas as pd
 from langchain.document_loaders.csv_loader import CSVLoader
@@ -94,8 +95,38 @@ class AI_assist:
 
         return retriever
     
+    #add system pre injected templates
+    def system_pre_injected_templates(self):
+        pass
+
+    def get_context_retriever_chain(vector_store):
+        llm = ChatOpenAI()
+
+        retriever = vector_store.as_retriever()
+        prompt = ChatPromptTemplate.from_messages([
+            MessagesPlaceholder(variable_name= "chat_history"),
+            ("user","{input}"),
+            ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
+        ])
+
+        retriver_chain = create_history_aware_retriever(llm,retriever, prompt)
+        return retriver_chain    
     #create a document chain
-    
-    
+    def get_conversational_rag_chain(retriever_chain):
+
+        llm = ChatOpenAI()
+
+        prompt = ChatPromptTemplate.from_messages([
+        ("system", "Answer the user's questions based on the below context:\n\n{context}"),
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("user", "{input}"),
+        ])
+
+        stuff_documents_chain = create_stuff_documents_chain(llm,prompt)
+
+        return create_retrieval_chain(retriever_chain,stuff_documents_chain)
+
+
+        
 
 

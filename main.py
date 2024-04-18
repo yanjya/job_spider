@@ -1,8 +1,4 @@
 import job_spider
 
-key_word = '店員'
-spider = job_spider.JobSpider(key_word)
-spider.get_job_data()
-data = spider.get_job_details()
-# data.drop(columns = ['job_link'], inplace = True)
-data.to_csv('job_data.csv', index = False)
+job_spider = job_spider.JobSpider()
+job_spider.get_all_job_data()
