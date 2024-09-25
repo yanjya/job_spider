@@ -27,8 +27,6 @@ class JobSpider:
         """
         Retrieves the area code information from the specified URL and returns it as a DataFrame.
 
-        Returns:
-            pd.DataFrame: A DataFrame containing the area code information.
         """
         area_code = pd.DataFrame(requests.get(self.area_code_url).json()[0]['n'])
         area_code = area_code.explode('n')
@@ -63,8 +61,6 @@ class JobSpider:
     #get job information
     def get_job_info(self, area_code, industry) -> pd.DataFrame:
         """
-        Retrieves job information from the 104 job search website based on the provided area code and industry.
-
         Args:
             area_code (pd.DataFrame): DataFrame containing area codes.
             industry (pd.DataFrame): DataFrame containing industry codes.
