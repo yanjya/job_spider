@@ -24,10 +24,7 @@ class JobSpider:
 
     #get area code
     def get_area_code(self) -> pd.DataFrame:
-        """
-        Retrieves the area code information from the specified URL and returns it as a DataFrame.
 
-        """
         area_code = pd.DataFrame(requests.get(self.area_code_url).json()[0]['n'])
         area_code = area_code.explode('n')
         area_code['des2'] = area_code['n'].apply(lambda x: x['des'])
@@ -40,12 +37,7 @@ class JobSpider:
     
     # get industry code
     def get_industry_code(self) -> pd.DataFrame:
-        """
-        Retrieves the industry code data from the specified URL and returns it as a pandas DataFrame.
 
-        Returns:
-            pd.DataFrame: The industry code data as a pandas DataFrame.
-        """
         industry = pd.DataFrame(requests.get(self.industry_code_url).json())
         industry = industry.explode('n')
         industry['des2'] = industry['n'].apply(lambda x: x['des'])
@@ -60,18 +52,8 @@ class JobSpider:
 
     #get job information
     def get_job_info(self, area_code, industry) -> pd.DataFrame:
-        """
-        Args:
-            area_code (pd.DataFrame): DataFrame containing area codes.
-            industry (pd.DataFrame): DataFrame containing industry codes.
 
-        Returns:
-            pd.DataFrame: DataFrame containing the job information.
 
-        Raises:
-            KeyboardInterrupt: If the process is interrupted by the user.
-            Exception: If an error occurs during the retrieval process.
-        """
         df = []
         for area in area_code['no2'].unique():
             for indcat in industry['no2'].unique():
